@@ -48,7 +48,7 @@ Many IDEs support syntax highlighting and auto-completion for Twig:
 
 * *Textmate* via the `Twig bundle`_
 * *Vim* via the `Jinja syntax plugin`_
-* *Netbeans* via the `Twig syntax plugin`_
+* *Netbeans* via the `Twig syntax plugin`_ (until 7.1, native as of 7.2)
 * *PhpStorm* (native as of 2.1)
 * *Eclipse* via the `Twig plugin`_
 * *Sublime Text* via the `Twig bundle`_
@@ -189,6 +189,56 @@ progression of integers:
 
 Go to the :doc:`functions<functions/index>` page to learn more about the
 built-in functions.
+
+Named Arguments
+---------------
+
+.. versionadded:: 1.12
+    Support for named arguments was added in Twig 1.12.
+
+Arguments for filters and functions can also be passed as *named arguments*:
+
+.. code-block:: jinja
+
+    {% for i in range(low=1, high=10, step=2) %}
+        {{ i }},
+    {% endfor %}
+
+Using named arguments makes your templates more explicit about the meaning of
+the values you pass as arguments:
+
+.. code-block:: jinja
+
+    {{ data|convert_encoding('UTF-8', 'iso-2022-jp') }}
+
+    {# versus #}
+
+    {{ data|convert_encoding(from='iso-2022-jp', to='UTF-8') }}
+
+Named arguments also allow you to skip some arguments for which you don't want
+to change the default value::
+
+.. code-block:: jinja
+
+    {# the first argument is the date format, which defaults to the global date format if null is passed #}
+    {{ "now"|date(null, "Europe/Paris") }}
+
+    {# or skip the format value by using a named argument for the timezone #}
+    {{ "now"|date(timezone="Europe/Paris") }}
+
+You can also use both positional and named arguments in one call, which is not
+recommended as it can be confusing:
+
+.. code-block:: jinja
+
+    {# both work #}
+    {{ "now"|date('d/m/Y H:i', timezone="Europe/Paris") }}
+    {{ "now"|date(timezone="Europe/Paris", 'd/m/Y H:i') }}
+
+.. tip::
+
+    Each function and filter documentation page has a section where the names
+    of all arguments are listed when supported.
 
 Control Structure
 -----------------
@@ -443,6 +493,9 @@ For bigger sections it makes sense to mark a block :doc:`raw<tags/raw>`.
 Macros
 ------
 
+.. versionadded:: 1.12
+    Support for default argument values was added in Twig 1.12.
+
 Macros are comparable with functions in regular programming languages. They
 are useful to reuse often used HTML fragments to not repeat yourself.
 
@@ -477,6 +530,15 @@ current namespace via the :doc:`from<tags/from>` tag and optionally alias them:
         <dt>Password</dt>
         <dd>{{ input_field('password', '', 'password') }}</dd>
     </dl>
+
+A default value can also be defined for macro arguments when not provided in a
+macro call:
+
+.. code-block:: jinja
+
+    {% macro input(name, value = "", type = "text", size = 20) %}
+        <input type="{{ type }}" name="{{ name }}" value="{{ value|e }}" size="{{ size }}" />
+    {% endmacro %}
 
 Expressions
 -----------
@@ -542,6 +604,11 @@ Arrays and hashes can be nested:
 
     {% set foo = [1, {"foo": "bar"}] %}
 
+.. tip::
+
+    Using double-quoted or single-quoted strings has no impact on performance
+    but string interpolation is only supported in double-quoted strings.
+
 Math
 ~~~~
 
@@ -551,7 +618,7 @@ but exists for completeness' sake. The following operators are supported:
 * ``+``: Adds two objects together (the operands are casted to numbers). ``{{
   1 + 1 }}`` is ``2``.
 
-* ``-``: Substracts the second number from the first one. ``{{ 3 - 2 }}`` is
+* ``-``: Subtracts the second number from the first one. ``{{ 3 - 2 }}`` is
   ``1``.
 
 * ``/``: Divides two numbers. The returned value will be a floating point
@@ -654,6 +721,9 @@ tests.
 Other Operators
 ~~~~~~~~~~~~~~~
 
+.. versionadded:: 1.11.2
+    Support for the extended ternary operator was added in Twig 1.11.2.
+
 The following operators are very useful but don't fit into any of the other
 categories:
 
@@ -669,7 +739,15 @@ categories:
 
 * ``.``, ``[]``: Gets an attribute of an object.
 
-* ``?:``: The PHP ternary operator: ``{{ foo ? 'yes' : 'no' }}``
+* ``?:``: The ternary operator:
+
+  .. code-block:: jinja
+
+      {{ foo ? 'yes' : 'no' }}
+
+      {# as of Twig 1.11.2 #}
+      {{ foo ?: 'no' }} == {{ foo ? foo : 'no' }}
+      {{ foo ? 'yes' }} == {{ foo ? 'yes' : '' }}
 
 String Interpolation
 ~~~~~~~~~~~~~~~~~~~~
@@ -678,8 +756,8 @@ String Interpolation
     String interpolation was added in Twig 1.5.
 
 String interpolation (`#{expression}`) allows any valid expression to appear
-within a string. The result of evaluating that expression is inserted into the
-string:
+within a *double-quoted string*. The result of evaluating that expression is
+inserted into the string:
 
 .. code-block:: jinja
 
